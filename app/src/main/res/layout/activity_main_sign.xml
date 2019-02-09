@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#fff">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+        <!--Description: 注册-->
+        <TextView
+            android:background="@drawable/sign_border"
+            android:textColor="#333333"
+            android:layout_weight="1.5"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="注册"
+            android:gravity="center"
+            android:textSize="30dp"/>
+        <!--Description: 姓名-->
+        <LinearLayout
+            android:background="@drawable/sign_border"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal">
+            <TextView
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="match_parent" />
+            <TextView
+                android:textColor="#333333"
+                android:gravity="left|center_vertical"
+                android:textSize="30dp"
+                android:text="姓名"
+                android:layout_weight="4"
+                android:layout_width="0dp"
+                android:layout_height="match_parent" />
+            <EditText
+                android:id="@+id/sign_name"
+                android:background="@null"
+                android:textSize="30dp"
+                android:layout_weight="13"
+                android:layout_width="0dp"
+                android:layout_height="match_parent" />
+        </LinearLayout>
+        <!--Description: 车牌号-->
+        <LinearLayout
+            android:background="@drawable/sign_border"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal">
+            <TextView
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="match_parent" />
+            <TextView
+                android:textColor="#333333"
+                android:gravity="left|center_vertical"
+                android:textSize="30dp"
+                android:text="车牌号"
+                android:layout_weight="5"
+                android:layout_width="0dp"
+                android:layout_height="match_parent" />
+            <EditText
+                android:id="@+id/sign_license_plate_number"
+                android:background="@null"
+                android:textSize="30dp"
+                android:layout_weight="12"
+                android:layout_width="0dp"
+                android:layout_height="match_parent" />
+        </LinearLayout>        
+        <!--Description: 身份证号-->
+        <LinearLayout
+            android:background="@drawable/sign_border"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal">
+            <TextView
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="match_parent" />
+            <TextView
+                android:textColor="#333333"
+                android:gravity="left|center_vertical"
+                android:textSize="30dp"
+                android:text="身份证号"
+                android:layout_weight="6.5"
+                android:layout_width="0dp"
+                android:layout_height="match_parent" />
+            <EditText
+                android:id="@+id/sign_identification_number"
+                android:background="@null"
+                android:textSize="30dp"
+                android:layout_weight="10.5"
+                android:layout_width="0dp"
+                android:layout_height="match_parent" />
+        </LinearLayout>
+        <!--Description: 上传身份证号-->
+        <LinearLayout
+            android:background="@drawable/sign_border"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="8"
+            android:orientation="vertical">
+            <TextView
+                android:textSize="18dp"
+                android:textColor="#333333"
+                android:gravity="center"
+                android:text="身份证照片"
+                android:layout_weight="1"
+                android:layout_width="match_parent"
+                android:layout_height="0dp" />
+            <ImageView
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:id="@+id/identification_imge_view"
+                android:background="@mipmap/identification_default_image"
+                android:layout_weight="6.5"
+                android:layout_width="match_parent"
+                android:layout_height="0dp" />
+
+            <Button
+                android:background="@drawable/submit_button"
+                android:id="@+id/submit_button"
+                android:layout_weight="1"
+                android:layout_width="100dp"
+                android:layout_height="0dp"
+                android:layout_gravity="center"
+                android:layout_marginTop="15dp"
+                android:layout_marginBottom="15dp"
+                android:text="提交"/>
+        </LinearLayout>
+    </LinearLayout>
+</android.support.constraint.ConstraintLayout>
