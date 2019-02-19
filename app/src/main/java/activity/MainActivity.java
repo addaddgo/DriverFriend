@@ -1,8 +1,8 @@
 package activity;
 /*
- * 起始活动：申请限权，显示进入界面
- * 限权的申请一次性全部申请
- * 申请的限权：
+ * 起始活动：申请权限，显示进入界面
+ * 权限的申请一次性全部申请
+ * 申请的权限：
  * 【访问内存】：SignActivity
  * 【相机】：SignActivity
  * 【网络】：SignActivity
@@ -25,8 +25,7 @@ import android.webkit.PermissionRequest;
 
 import com.example.hp.driverfriend.R;
 
-import java.security.Permission;
-import java.security.PermissionCollection;
+
 import java.util.ArrayList;
 
 import activity.signActivity.SignActivity;
@@ -42,12 +41,12 @@ public class MainActivity extends Activity {
     public int fromMainActivity = 1;
 
     /*
-     * 目的：记录需要申请的限权
-     * 使用处：限权申请处onResume
-     * 注意：需要申请的限权，才记录到此。INTERNET这个限权不需要申请。
+     * 目的：记录需要申请的权限
+     * 使用处：权限申请处onResume
+     * 注意：需要申请的权限，才记录到此。INTERNET这个权限不需要申请。
      */
     private String[] permissions;
-    //生成限权列表:permissions
+    //生成权限列表:permissions
     {
         permissions = new String[]
                 {
@@ -63,15 +62,15 @@ public class MainActivity extends Activity {
     {
         ChinesePermissions = new String[]
                 {
-                        "储存限权",
-                        "相机限权",
+                        "储存权限",
+                        "相机权限",
                 };
     }
 
-     // 提示用户申请限权（禁止询问后）
+     // 提示用户申请权限（禁止询问后）
     private AlertDialog alertDialogNoAgain;
 
-     //提示用户申请限权
+     //提示用户申请权限
     private AlertDialog alertDialog;
 
     //显示：进入界面
@@ -86,25 +85,25 @@ public class MainActivity extends Activity {
     }
 
 
-    /*限权申请函数
-     * 描述：用户必须接受所有的限权申请，才能进入程序。
-     * 申请的限权：实例参数permissions
+    /*权限申请函数
+     * 描述：用户必须接受所有的权限申请，才能进入程序。
+     * 申请的权限：实例参数permissions
      */
     private void requestMyPermissions(){
         ArrayList<String> permissionsRequestList = new ArrayList<>();
         String[] permissionsRequest;
-        //将没有申请的限权加到permissionsRequestList中
+        //将没有申请的权限加到permissionsRequestList中
         for(int i = 0 ; i < this.permissions.length ; i++){
             if(checkSelfPermission(this.permissions[i]) == PackageManager.PERMISSION_DENIED){
                 permissionsRequestList.add(this.permissions[i]);
             }
         }
-        //将permissionsRequestList中限权字符放到permissionRequest数组中
+        //将permissionsRequestList中权限字符放到permissionRequest数组中
         permissionsRequest = new String[permissionsRequestList.size()];
         for (int i = 0; i < permissionsRequest.length; i++) {
             permissionsRequest[i] = permissionsRequestList.get(i);
         }
-        //如果有没有被允许的限权，就申请
+        //如果有没有被允许的权限，就申请
         if(permissionsRequest.length == 0){//进入程序
             Intent intent = new Intent(this,SignActivity.class);
             startActivity(intent);
@@ -130,7 +129,7 @@ public class MainActivity extends Activity {
                 }
             }
 
-            //将被禁止的限权们，转换成一条中文字符串
+            //将被禁止的权限们，转换成一条中文字符串
            ArrayList<String> stringsDenied = new ArrayList<>();
             for (int i = 0; i < permissions.length; i++) {
                 if(grantResults[i] == PackageManager.PERMISSION_DENIED){
@@ -146,7 +145,7 @@ public class MainActivity extends Activity {
                     break;
                 }
             }
-            //如果限权全部开启
+            //如果权限全部开启
             if(intoApp){
                 Intent intent = new Intent(this,SignActivity.class);
                 startActivity(intent);
@@ -155,15 +154,16 @@ public class MainActivity extends Activity {
                 if (toSetting) {//如果被禁止再次询问
                     AlertDialog.Builder builder = new AlertDialog.Builder(this);
                     builder.setPositiveButton("去允许", new alertDialogButtonNoAgain(this.alertDialogNoAgain))
-                            .setMessage("以下的限权被禁止：\n" + ChinesePermission + "请打开以下限权，否则程序无法运行。")
-                            .setTitle("限权申请");
+                            .setMessage("以下的权限被禁止：\n" + ChinesePermission + "请打开以下权限，否则程序无法运行。")
+                            .setTitle("权限申请")
+                            .setCancelable(false);
                     this.alertDialogNoAgain = builder.create();
                     this.alertDialogNoAgain.setCanceledOnTouchOutside(false);
                     this.alertDialogNoAgain.show();
                 } else {//再次询问
                     AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                    builder.setTitle("限权申请")
-                            .setMessage("以下的限权被禁止：\n" + ChinesePermission + "没有这些限权，应用程序无法运行。请打开这些限权。")
+                    builder.setTitle("权限申请")
+                            .setMessage("以下的权限被禁止：\n" + ChinesePermission + "没有这些权限，应用程序无法运行。请打开这些权限。")
                             .setPositiveButton("允许", new alertDialogButton(this.alertDialog));
                     this.alertDialog = builder.create();
                     this.alertDialog.setCanceledOnTouchOutside(false);
@@ -174,10 +174,10 @@ public class MainActivity extends Activity {
     }
 
 
-     //手动设置应用程序限权(含有禁止再次询问)
+     //手动设置应用程序权限(含有禁止再次询问)
     private class alertDialogButtonNoAgain implements DialogInterface.OnClickListener{
 
-        //提醒用户开启限权(禁止询问后)
+        //提醒用户开启权限(禁止询问后)
         private AlertDialog alertDialog;
 
         //将alertDialog传入
@@ -198,10 +198,10 @@ public class MainActivity extends Activity {
         }
     }
 
-     // 弹出：申请限权（允许再次询问）
+     // 弹出：申请权限（允许再次询问）
     private class alertDialogButton implements DialogInterface.OnClickListener{
 
-        //提醒用户开启限权（允许再次询问）
+        //提醒用户开启权限（允许再次询问）
         private AlertDialog alertDialog;
 
         //将alertDialog传入
@@ -217,7 +217,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    //手动设置限权之后,决定是否再次申请
+    //手动设置权限之后,决定是否再次申请
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -227,10 +227,10 @@ public class MainActivity extends Activity {
     }
 
     /*
-     * @Parameter EnglishStrings{ArrayList<String>} 英文限权名
-     * @Return String[] 中文限权名
-     * @Exception 如果参数含有非限权字符串(或者是在方法中不出现的限权)，可能会返回长度短于参数的字符串数组，可能为null
-     * Description 将英文限权名转换成中文限权名
+     * @Parameter EnglishStrings{ArrayList<String>} 英文权限名
+     * @Return String[] 中文权限名
+     * @Exception 如果参数含有非权限字符串(或者是在方法中不出现的权限)，可能会返回长度短于参数的字符串数组，可能为null
+     * Description 将英文权限名转换成中文权限名
      */
     private String[] translateEnglishPermission(ArrayList<String> EnglishStrings){
         String[] newStrings = new String[EnglishStrings.size()];
@@ -250,8 +250,8 @@ public class MainActivity extends Activity {
      * @Exception
      * Description 将字符串组合并成一个字符串
      * 如：
-     *  相机限权
-     *  储存限权
+     *  相机权限
+     *  储存权限
      */
     private String combineUnablePermissions(String[] strings){
         StringBuffer stringBuffer = new StringBuffer();

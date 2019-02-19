@@ -17,6 +17,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name="tool.SelectImageActivity"/>
         <activity android:name="tool.CameraActivity"/>
         <activity android:name="activity.signActivity.SignActivity"/>
     </application>

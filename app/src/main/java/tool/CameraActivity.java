@@ -2,40 +2,50 @@ package tool;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.Camera;
+import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.hardware.camera2.*;
+import android.location.SettingInjectorService;
 import android.media.Image;
 import android.media.ImageReader;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.provider.Settings;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
-
+import android.app.AlertDialog;
 import com.example.hp.driverfriend.R;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.lang.reflect.Array;
+import org.litepal.crud.DataSupport;
+
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.PropertyResourceBundle;
+
+import activity.MainActivity;
+
 
 /*
  * 获取一张照片：相机 相册
  * getPictureFromAlbum 从相册中获取照片
+ * 通许码 3
  */
 public class CameraActivity extends Activity implements SurfaceHolder.Callback{
 
+    public int fromCameraActivity = 3;
+
+    private int toSetting = 1;
+    private int toSelectImageActivity = 2;
     //相机组件
     private CaptureRequest captureRequest;
     private CameraDevice cameraDevice;
@@ -50,9 +60,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback{
     //储存照片
     private ImageReader imageReader;
 
-    //存储位置
-    private File file;
-
     //为相机打开一个新的线程
     private HandlerThread handlerThread;
     private Handler cameraHandler;
@@ -66,6 +73,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback{
     private int CHOSE_PHOTO = 1;
     private int TAKE_PHOTO = 2;
 
+    //申请限权提示框
+    private AlertDialog alertDialogAgain;//允许再次询问
+    private AlertDialog alertDialogNoAgain;//不允许再次询问
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -75,24 +86,140 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback{
         this.resetButton = findViewById(R.id.reset_image_button);
         this.albumButton = findViewById(R.id.album_button);
         this.surfaceHolder = this.surfaceView.getHolder();
-        this.file = new File("/storage/driverFriend/picture");
         //TODO(1): 需要和服务端商讨
         this.imageReader = ImageReader.newInstance(500,500,ImageFormat.JPEG,1);
         this.imageReader.setOnImageAvailableListener(new CameraImageReaderListener(),cameraHandler);
         openMyCamera();
     }
-    //开启自定义相机
+
+    //初始化相机
+    private void initCamera(){
+        this.cameraManager = (CameraManager)getSystemService(Context.CAMERA_SERVICE);
+        this.handlerThread = new HandlerThread("Camera2");
+        this.handlerThread.start();
+        this.cameraHandler = new Handler(this.handlerThread.getLooper());
+        this.mainHandler = new Handler(getMainLooper());
+        shouldOpenCamera();
+        if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_DENIED){
+            return;
+        }else {
+            try {
+                cameraManager.openCamera(CameraCharacteristics.LENS_FACING_FRONT + "", new MyCameraStateCallback(), cameraHandler);
+            }catch (CameraAccessException e){
+                e.printStackTrace();
+            }
+        }
+    }
+
+    //相机
     private void openMyCamera(){
+
         this.surfaceHolder.addCallback(this);
         //点击拍照
         this.takeAfterEnsureButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                takeAPicture();
+                lock();
             }
         });
     }
 
+    //如果限权允许就打开相机，反之申请
+    private void shouldOpenCamera(){
+            if(checkCallingOrSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED){//限权允许
+            }else{//申请限权
+                String[] per = new String[]{Manifest.permission.CAMERA};
+                if(shouldShowRequestPermissionRationale(per[0])){
+                    initAlertDialogAgain();
+                }else{
+                    initAlertDialogNoAgain();
+                }
+            }
+    }
+
+    //允许再次询问提示框
+    private void initAlertDialogAgain() {
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("限权申请")
+                .setMessage("请打开相机权限")
+                .setCancelable(false)
+                .setPositiveButton("允许", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        if(alertDialogAgain != null && alertDialogAgain.isShowing()){
+                            alertDialogAgain.dismiss();
+                        }
+                        String[] strings = {Manifest.permission.CAMERA};
+                        requestPermissions(strings,fromCameraActivity);
+                    }
+                });
+        this.alertDialogAgain = builder.create();
+        this.alertDialogAgain.setCanceledOnTouchOutside(false);
+        this.alertDialogAgain.show();
+    }
+    //不允许再次询问提示框
+    private void initAlertDialogNoAgain(){
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("限权申请")
+                .setMessage("您没有打开相机权限")
+                .setCancelable(false)
+                .setPositiveButton("去允许", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        if(alertDialogNoAgain != null && alertDialogNoAgain.isShowing()){
+                            alertDialogNoAgain.dismiss();
+                        }
+                        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                        Uri uri = Uri.fromParts("package",getPackageName(),null);
+                        intent.setData(uri);
+                        startActivityForResult(intent,toSetting);
+                    }
+                });
+        this.alertDialogNoAgain = builder.create();
+        this.alertDialogNoAgain.setCanceledOnTouchOutside(false);
+        this.alertDialogNoAgain.show();
+    }
+
+    //申请结果
+    @Override
+    public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if(requestCode == this.fromCameraActivity){
+            shouldOpenCamera();
+        }
+    }
+    //设置结果
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode == this.toSetting){
+            shouldOpenCamera();
+        }
+        if(requestCode == this.toSelectImageActivity){
+
+        }
+    }
+
+    //拍摄请求
+    private void lock(){
+        try {
+            this.captureRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
+                    CameraMetadata.CONTROL_AF_TRIGGER_START);
+            this.cameraCaptureSession.capture(this.captureRequestBuilder.build(), new takePictureCall(),
+                    cameraHandler);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
+    //拍摄请求回调
+    private class takePictureCall extends CameraCaptureSession.CaptureCallback{
+        @Override
+        public void onCaptureCompleted(CameraCaptureSession session,CaptureRequest request,TotalCaptureResult result) {
+            super.onCaptureCompleted(session, request, result);
+            cameraCaptureSession = session;
+            takeAPicture();
+        }
+    }
     //拍照
     private void takeAPicture(){
         try{
@@ -104,7 +231,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback{
                     CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
             this.cameraCaptureSession.stopRepeating();
             this.cameraCaptureSession.abortCaptures();
-            //Problem 这个管道没有更换，demo里面在拍照之前是换了管道的。要先发起一次请求，然后在回调里更换管道
             this.cameraCaptureSession.capture(builder.build(), new CameraCaptureSession.CaptureCallback() {
                 @Override
                 public void onCaptureCompleted( CameraCaptureSession session,CaptureRequest request, TotalCaptureResult result) {
@@ -115,48 +241,20 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback{
             e.printStackTrace();
         }
     }
-    //
-    //活动相片后，imageReader的回调
+
+    //获取相片后，imageReader的回调
     private class CameraImageReaderListener implements ImageReader.OnImageAvailableListener{
         @Override
         public void onImageAvailable(ImageReader reader) {
-            cameraHandler.post(new saver(imageReader.acquireLatestImage(),file));
+            Intent intent = new Intent(getSelf(),SelectImageActivity.class);
+            Image image = reader.acquireLatestImage();
+            ByteBuffer byteBuffer = image.getPlanes()[0].getBuffer();
+            byte[] mg = new byte[byteBuffer.remaining()];
+            byteBuffer.get(mg);
+            intent.putExtra("imageData",mg);
+            startActivityForResult(intent,toSelectImageActivity);
         }
     }
-    //开辟另外的线程保存图片
-    private class saver implements Runnable{
-
-        final private Image image;
-        private File file;
-
-        private saver(Image image,File file){
-            this.image = image;
-            this.file = file;
-        }
-        @Override
-        public void run() {
-            ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-            byte[] bytes = new byte[buffer.remaining()];
-            buffer.get(bytes);
-            FileOutputStream output = null;
-            try {
-                output = new FileOutputStream(file);
-                output.write(bytes);
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                image.close();
-                if (null != output) {
-                    try {
-                        output.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
-    }
-
 
     //surfaceView的回调
     @Override
@@ -170,25 +268,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback{
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
 
-    }
-
-    //TODO(1): 每一次打开相机的时候，查看限权。相机运行时,限权中途关闭的处理措施
-    //初始化相机
-    private void initCamera(){
-        this.cameraManager = (CameraManager)getSystemService(Context.CAMERA_SERVICE);
-        this.handlerThread = new HandlerThread("Camera2");
-        this.handlerThread.start();
-        this.cameraHandler = new Handler(this.handlerThread.getLooper());
-        this.mainHandler = new Handler(getMainLooper());
-        if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_DENIED){
-            return;
-        }else {
-            try {
-                cameraManager.openCamera(CameraCharacteristics.LENS_FACING_FRONT + "", new MyCameraStateCallback(), cameraHandler);
-            }catch (CameraAccessException e){
-                e.printStackTrace();
-            }
-        }
     }
 
     //打开相机的回调
@@ -220,11 +299,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback{
         try{
             this.captureRequestBuilder = this.cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             captureRequestBuilder.addTarget(this.surfaceHolder.getSurface());
-            cameraDevice.createCaptureSession(Arrays.asList(this.surfaceHolder.getSurface()),new MyCameraCaptureSessionStateCallBack(),null);
+            cameraDevice.createCaptureSession(Arrays.asList(this.surfaceHolder.getSurface(),this.imageReader.getSurface()),new MyCameraCaptureSessionStateCallBack(),null);
         }catch (CameraAccessException e){
             e.printStackTrace();
         }
-
     }
 
     //开启管道的回调
@@ -251,12 +329,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback{
         }
     }
 
-
-    //从相册中获取相片
-     public Bitmap getPictureFromAlbum(){
-         return null;
-    }
-
     //打开相册
     public void openAlbum(){
         Intent intent = new Intent("android.intent.action.GET_CONTENT");
@@ -265,10 +337,28 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback{
     }
 
 
+    //从相册中获取相片
+    public Bitmap getPictureFromAlbum(){
+        return null;
+    }
 
     //活动的activityForResult方法
     public void inTheEnd(int requestCode, int resultCode, Intent data){
 
+    }
+
+    //得到本身
+    private Context getSelf(){
+        return this;
+    }
+
+    //保存的图片
+    private class MyImage extends DataSupport{
+        private Image identificationImage;
+
+        private void setIdentificationImage(Image identificationImage) {
+            this.identificationImage = identificationImage;
+        }
     }
 
 }
