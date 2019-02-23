@@ -3,6 +3,7 @@ package tool;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -29,10 +30,13 @@ import com.example.hp.driverfriend.R;
 
 import org.litepal.crud.DataSupport;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import activity.MainActivity;
+import manager.AAL;
 
 
 /*
@@ -42,10 +46,6 @@ import activity.MainActivity;
  */
 public class CameraActivity extends Activity implements SurfaceHolder.Callback{
 
-    public int fromCameraActivity = 3;
-
-    private int toSetting = 1;
-    private int toSelectImageActivity = 2;
     //相机组件
     private CaptureRequest captureRequest;
     private CameraDevice cameraDevice;
@@ -57,7 +57,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback{
     private SurfaceView surfaceView;
     private SurfaceHolder surfaceHolder;
 
-    //储存照片
+    //使用其的回调
     private ImageReader imageReader;
 
     //为相机打开一个新的线程
@@ -77,6 +77,13 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback{
     private AlertDialog alertDialogAgain;//允许再次询问
     private AlertDialog alertDialogNoAgain;//不允许再次询问
 
+    //图片数据名
+    public static String  imageName = "bitmap";
+    //图片数据
+    private byte[] imageData;
+    //成功返回上一个活动照片
+    public static int getImage = 1;
+    public static int noImage = 2;
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -90,6 +97,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback{
         this.imageReader = ImageReader.newInstance(500,500,ImageFormat.JPEG,1);
         this.imageReader.setOnImageAvailableListener(new CameraImageReaderListener(),cameraHandler);
         openMyCamera();
+        initButton();
     }
 
     //初始化相机
@@ -150,7 +158,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback{
                             alertDialogAgain.dismiss();
                         }
                         String[] strings = {Manifest.permission.CAMERA};
-                        requestPermissions(strings,fromCameraActivity);
+                        requestPermissions(strings,AAL.SETTING);
                     }
                 });
         this.alertDialogAgain = builder.create();
@@ -172,7 +180,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback{
                         Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
                         Uri uri = Uri.fromParts("package",getPackageName(),null);
                         intent.setData(uri);
-                        startActivityForResult(intent,toSetting);
+                        startActivityForResult(intent,AAL.SETTING);
                     }
                 });
         this.alertDialogNoAgain = builder.create();
@@ -184,7 +192,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback{
     @Override
     public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if(requestCode == this.fromCameraActivity){
+        if(requestCode == AAL.SETTING){
             shouldOpenCamera();
         }
     }
@@ -192,11 +200,44 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback{
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(requestCode == this.toSetting){
+        if(requestCode == AAL.SETTING){
             shouldOpenCamera();
         }
-        if(requestCode == this.toSelectImageActivity){
+        if(requestCode == AAL.SelectImageActivity){
+            if(resultCode == SelectImageActivity.unsuccessful){
+                MyToast.toastShowShort(this,"取消");
+            }
+            if(resultCode == SelectImageActivity.successful){
+                Intent intent = new Intent();
+                intent.putExtra(imageName,imageData);
+                setResult(getImage,intent);
+                finish();
+            }
+        }
+        //TODO(1)contentResolver弄明白
+        if(requestCode == AAL.ALBUM){
+            if(resultCode == RESULT_OK){
+                Uri uri = data.getData();
+                ContentResolver contentResolver = this.getContentResolver();
+                Bitmap bitmap;
+                try {
+                    bitmap = BitmapFactory.decodeStream(contentResolver.openInputStream(uri));
+                    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                    if(bitmap.compress(Bitmap.CompressFormat.PNG,100,byteArrayOutputStream)){
+                        Intent intent = new Intent();
+                        intent.putExtra(imageName,byteArrayOutputStream.toByteArray());
+                        setResult(getImage,intent);
+                        finish();
+                    }else {
+                        MyToast.toastShowLong(this,"图片打开失败");
+                    }
 
+                }catch (FileNotFoundException e){
+                    e.printStackTrace();
+                    MyToast.toastShowLong(this,"图片打开失败");
+                }
+
+            }
         }
     }
 
@@ -227,8 +268,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback{
             builder.addTarget(this.imageReader.getSurface());
             builder.set(CaptureRequest.CONTROL_AF_MODE,
                     CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-            builder.set(CaptureRequest.CONTROL_AE_MODE,
-                    CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
+            builder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
             this.cameraCaptureSession.stopRepeating();
             this.cameraCaptureSession.abortCaptures();
             this.cameraCaptureSession.capture(builder.build(), new CameraCaptureSession.CaptureCallback() {
@@ -249,10 +289,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback{
             Intent intent = new Intent(getSelf(),SelectImageActivity.class);
             Image image = reader.acquireLatestImage();
             ByteBuffer byteBuffer = image.getPlanes()[0].getBuffer();
-            byte[] mg = new byte[byteBuffer.remaining()];
-            byteBuffer.get(mg);
-            intent.putExtra("imageData",mg);
-            startActivityForResult(intent,toSelectImageActivity);
+            imageData = new byte[byteBuffer.remaining()];
+            byteBuffer.get(imageData);
+            intent.putExtra(imageName,imageData);
+            startActivityForResult(intent,AAL.SelectImageActivity);
         }
     }
 
@@ -329,11 +369,20 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback{
         }
     }
 
+    //初始化按钮
+    private void initButton(){
+        this.albumButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openAlbum();
+            }
+        });
+    }
     //打开相册
     public void openAlbum(){
         Intent intent = new Intent("android.intent.action.GET_CONTENT");
         intent.setType("image/*");
-        startActivityForResult(intent,this.CHOSE_PHOTO);
+        startActivityForResult(intent,AAL.ALBUM);
     }
 
 
@@ -355,7 +404,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback{
     //保存的图片
     private class MyImage extends DataSupport{
         private Image identificationImage;
-
         private void setIdentificationImage(Image identificationImage) {
             this.identificationImage = identificationImage;
         }

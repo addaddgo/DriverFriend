@@ -8,17 +8,23 @@ package activity.signActivity;
  *  通讯码：2
  */
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 
 import com.example.hp.driverfriend.R;
 
+import manager.AAL;
+import tool.CameraActivity;
+
 public class SignActivity extends Activity {
 
-    public int forSignActivity = 2;
     /*
      * Target 处理信息用户填写的信息
      * Function 使用接口中的函数来处理相应的信息
@@ -44,6 +50,7 @@ public class SignActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_sign);
         init();
+        addAllListeners();
     }
 
     @Override
@@ -58,7 +65,7 @@ public class SignActivity extends Activity {
         this.identificationNumberEditText = findViewById(R.id.sign_identification_number);
         this.licenseNumberEditText = findViewById(R.id.sign_license_plate_number);
         this.nameEditText = findViewById(R.id.sign_name);
-        this.identificationImage = findViewById(R.id.identification_imge_view);
+        this.identificationImage = findViewById(R.id.identification_image_view);
         this.submitButton = findViewById(R.id.submit_button);
         this.methodSignInterface = new SignMethod();
     }
@@ -67,12 +74,31 @@ public class SignActivity extends Activity {
      * Description 给组件设置监听者
      */
     private void addAllListeners(){
-
+        //身份证
+        this.identificationImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getSelf(),CameraActivity.class);
+                startActivityForResult(intent,AAL.CameraActivity);
+            }
+        });
     }
 
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode == AAL.CameraActivity){
+            if(resultCode == CameraActivity.getImage){
+                byte[] mg = data.getByteArrayExtra(CameraActivity.imageName);
+                Bitmap bitmap = BitmapFactory.decodeByteArray(mg,0,mg.length);
+                this.identificationImage.setImageBitmap(bitmap);
+            }
+        }
+    }
+
+    //返回自己
+    private Context getSelf(){
+        return this;
     }
 }

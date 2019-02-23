@@ -14,14 +14,11 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.pm.PermissionGroupInfo;
-import android.content.pm.PermissionInfo;
-import android.graphics.Paint;
-import android.graphics.drawable.RotateDrawable;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.webkit.PermissionRequest;
 
 import com.example.hp.driverfriend.R;
 
@@ -29,16 +26,11 @@ import com.example.hp.driverfriend.R;
 import java.util.ArrayList;
 
 import activity.signActivity.SignActivity;
+import manager.AAL;
 import tool.CameraActivity;
 
 public class MainActivity extends Activity {
 
-    /*
-     * 目的：注明自己
-     * 功能：让下一个活动，知道他上一个活动是谁
-     * 使用处：活动切换时：如startActivityForResult函数中
-     */
-    public int fromMainActivity = 1;
 
     /*
      * 目的：记录需要申请的权限
@@ -79,7 +71,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         //requestPermissions(this.permissions,1);
-        Intent intent  = new Intent(this,CameraActivity.class);
+        Intent intent  = new Intent(this,SignActivity.class);
         startActivity(intent);
         finish();
     }
@@ -194,7 +186,7 @@ public class MainActivity extends Activity {
             Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
             Uri uri = Uri.fromParts("package",getPackageName(),null);
             intent.setData(uri);
-            startActivityForResult(intent,ActivitiesAddressList.MainActivity);
+            startActivityForResult(intent,AAL.SETTING);
         }
     }
 
@@ -221,7 +213,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == this.fromMainActivity){
+        if (requestCode == AAL.SETTING){
             requestMyPermissions();
         }
     }
