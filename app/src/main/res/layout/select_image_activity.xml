@@ -12,26 +12,11 @@
             android:layout_weight="8"
             android:layout_width="match_parent"
             android:layout_height="0dp" />
-        <LinearLayout
-            android:orientation="horizontal"
-            android:layout_weight="1"
-            android:layout_width="match_parent"
-            android:layout_height="0dp">
-
-            <TextView
-                android:layout_weight="2"
-                android:layout_width="0dp"
-                android:layout_height="match_parent" />
-            <Button
-                android:text="确定"
-                android:id="@+id/ensure_button"
-                android:layout_weight="3"
-                android:layout_width="0dp"
-                android:layout_height="match_parent" />
-            <TextView
-                android:layout_weight="2"
-                android:layout_width="0dp"
-                android:layout_height="match_parent" />
-        </LinearLayout>
+        <Button
+            android:layout_gravity="center"
+            android:background="@mipmap/ensure_picture"
+            android:id="@+id/ensure_button"
+            android:layout_height="100dp"
+            android:layout_width="100dp"/>
     </LinearLayout>
 </android.support.constraint.ConstraintLayout>

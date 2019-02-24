@@ -66,7 +66,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback{
     private Handler mainHandler;
 
     private Button takeAfterEnsureButton;//确定拍摄
-    private Button resetButton;//重新拍摄
     private Button albumButton;//打开相册
 
     //resultCoed
@@ -90,7 +89,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback{
         setContentView(R.layout.camera_activity);
         this.surfaceView = findViewById(R.id.camera_surface_view);
         this.takeAfterEnsureButton = findViewById(R.id.take_after_ensure_button);
-        this.resetButton = findViewById(R.id.reset_image_button);
         this.albumButton = findViewById(R.id.album_button);
         this.surfaceHolder = this.surfaceView.getHolder();
         //TODO(1): 需要和服务端商讨
@@ -127,6 +125,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback{
         this.takeAfterEnsureButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                takeAfterEnsureButton.setBackground(getDrawable(R.drawable.take_picture_click));
                 lock();
             }
         });
