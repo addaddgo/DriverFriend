@@ -14,8 +14,6 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -27,7 +25,6 @@ import java.util.ArrayList;
 
 import activity.signActivity.SignActivity;
 import manager.AAL;
-import tool.CameraActivity;
 
 public class MainActivity extends Activity {
 
@@ -71,7 +68,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         //requestPermissions(this.permissions,1);
-        Intent intent  = new Intent(this,SignActivity.class);
+        Intent intent  = new Intent(this,MyInformationActivity.class);
         startActivity(intent);
         finish();
     }
